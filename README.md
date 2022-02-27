@@ -4,11 +4,17 @@ Used to put http/https requests (sent by [python requests module](https://github
 
 The program have the client (can be more than one, e.g. multiple processes) and server part, and they communicate via (and only via) unix socket. The proxy protocol is dependent on [pickle](https://docs.python.org/3/library/pickle.html), which is **not secure**, so the client is restricted to the ones in localhost with permission to access the unix socket file created by server-side.
 
-## Why py-http-adapter-proxy
+## Why py-http-adapter-proxy written
 
-The program was written for reuse the http connections (HTTP keep-alive) as many as possible even if http requests are sent in different processes.
+The program was written for reusing the http connections (HTTP keep-alive) as many as possible even if http requests are sent in different processes.
 
 ## Run
+
+### Install
+
+```bash
+pip install .
+```
 
 ### Server-side
 
