@@ -3,6 +3,7 @@ import socket
 from requests.adapters import BaseAdapter
 from requests import adapters, Response, PreparedRequest, sessions
 from .proto import sendobjs, recvobjs
+from .serialize import deserialize_requests_response, serialize_requests_prepared_request
 
 HTTPAdapter = adapters.HTTPAdapter()
 
@@ -29,11 +30,11 @@ class ProxyAdapter(BaseAdapter):
         if self.proxy_timeout:
             conn.settimeout(self.proxy_timeout)
         conn.connect(self.socket_filename)
-        sendobjs(conn, request, stream, timeout, verify, cert, proxies)
+        sendobjs(conn, serialize_requests_prepared_request(request), stream, timeout, verify, cert, proxies)
         ret = recvobjs(conn)
         conn.close()
-        if isinstance(ret[0], Response):
-            return ret[0]
+        if isinstance(ret[0], dict):
+            return deserialize_requests_response(ret[0], request)
         else:
             raise ret[0]
 

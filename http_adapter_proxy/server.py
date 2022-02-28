@@ -5,6 +5,10 @@ import socket
 from logging import info, warning
 from gevent import spawn, monkey
 from .proto import recvobjs, sendobjs
+monkey.patch_all()
+
+from requests.adapters import HTTPAdapter
+from .serialize import deserialize_requests_prepared_request, serialize_requests_response
 
 
 class ProxyServer():
@@ -16,8 +20,9 @@ class ProxyServer():
             conn.settimeout(self.proxy_timeout)
         try:
             args = recvobjs(conn)
-            info("Url: %s", args[0].url)
-            domain = '/'.join(args[0].url.split('/', maxsplit=4)[:3])
+            req = deserialize_requests_prepared_request(args[0])
+            info("Url: %s", req.url)
+            domain = '/'.join(req.url.split('/', maxsplit=4)[:3])
         except Exception as except_:  # pylint: disable=broad-except
             warning("Catch exception when receiving data: %s", except_)
             conn.close()
@@ -26,7 +31,10 @@ class ProxyServer():
         info("Domain: %s, HTTPAdapters: %d", domain, queue.qsize())
         adapter = queue.get()
         try:
-            resp = adapter.send(*args)
+            resp = adapter.send(
+                req,
+                *args[1:]
+            )
         except Exception as except_:  # pylint: disable=broad-except
             try:
                 sendobjs(conn, except_)
@@ -37,7 +45,7 @@ class ProxyServer():
                 )
         else:
             try:
-                sendobjs(conn, resp)
+                sendobjs(conn, serialize_requests_response(resp))
             except Exception as except_:  # pylint: disable=broad-except
                 warning("Fail to send requests.Response: %s", except_)
         finally:
@@ -61,8 +69,6 @@ class ProxyServer():
                  proxy_timeout: float = 10,
                  domains: Optional[Dict[str, int]] = None,
                  other: int = 16):
-        monkey.patch_all()
-        from requests.adapters import HTTPAdapter
         self.adapters: Dict[str, LifoQueue[HTTPAdapter]] = {
             domain: LifoQueue(maxsize=num) for domain, num in (domains or {}).items()
         }
