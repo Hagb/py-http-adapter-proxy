@@ -10,7 +10,6 @@ def deserialize_requests_response(to_deserialize: dict, prepared_request: Prepar
     # From https://github.com/lavalamp-/ws-backend-community
     to_return = Response()
     to_return.status_code = to_deserialize["status_code"]
-    print(to_deserialize["status_code"], to_return.status_code)
     to_return.headers = CaseInsensitiveDict(to_deserialize["headers"])
     to_return.encoding = to_deserialize["encoding"]
     to_return._content = to_deserialize["content"]
